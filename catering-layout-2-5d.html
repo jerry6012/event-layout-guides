@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>東坤外燴｜校園餐廳配置導覽</title>
+  <style>
+    :root {
+      --ink: #18332f;
+      --muted: #6f7f78;
+      --paper: #f5f2e9;
+      --paper-deep: #e8e3d7;
+      --surface: #fffdf8;
+      --line: #cbd2c9;
+      --green: #2d6a5f;
+      --green-dark: #15483f;
+      --orange: #e77148;
+      --blue: #3977b7;
+      --gold: #e4ac4a;
+      --shadow: 0 18px 50px rgba(24, 51, 47, .14);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      background: radial-gradient(circle at 82% 8%, #fffdf4 0, var(--paper) 38%, #eeeade 100%);
+      color: var(--ink);
+      font-family: "Noto Sans TC", "PingFang TC", system-ui, sans-serif;
+    }
+    button { font: inherit; }
+    .shell { width: min(1440px, calc(100% - 40px)); margin: 0 auto; padding: 28px 0 38px; }
+    .topbar { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    .eyebrow { display: flex; align-items: center; gap: 10px; color: var(--orange); font-size: 12px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .eyebrow::before { content: ""; width: 28px; height: 2px; background: var(--orange); }
+    h1 { margin: 7px 0 0; font-size: clamp(28px, 4vw, 52px); letter-spacing: -.05em; line-height: 1; }
+    .lede { max-width: 620px; margin: 12px 0 0; color: var(--muted); font-size: 14px; line-height: 1.8; }
+    .stamp { color: var(--muted); font: 700 11px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; text-align: right; letter-spacing: .08em; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 18px; align-items: stretch; }
+    .map-card, .info-card { border: 1px solid rgba(24, 51, 47, .12); border-radius: var(--radius); background: rgba(255,253,248,.78); box-shadow: var(--shadow); backdrop-filter: blur(10px); }
+    .map-card { min-width: 0; overflow: hidden; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--line); gap: 12px; flex-wrap: wrap; }
+    .toolbar-note { color: var(--muted); font-size: 12px; }
+    .toolbar-actions { display: flex; gap: 8px; }
+    .control { border: 1px solid var(--line); border-radius: 999px; color: var(--ink); background: var(--surface); padding: 8px 13px; cursor: pointer; font-size: 12px; font-weight: 750; transition: .2s ease; }
+    .control:hover, .control:focus-visible { border-color: var(--green); color: var(--green-dark); transform: translateY(-1px); }
+    .control[aria-pressed="true"] { color: white; border-color: var(--green); background: var(--green); }
+    .map-viewport { position: relative; height: min(72vh, 720px); min-height: 430px; overflow: hidden; background: #e9e4d8; cursor: grab; touch-action: none; }
+    .map-viewport.is-panning { cursor: grabbing; }
+    .map-viewport::before { content: "NORTH ↑"; position: absolute; right: 20px; top: 18px; z-index: 2; color: var(--muted); font: 800 10px ui-monospace, monospace; letter-spacing: .12em; pointer-events: none; }
+    #layoutCanvas { width: 100%; height: 100%; display: block; transform-origin: 0 0; user-select: none; }
+    .legend { display: flex; align-items: center; gap: 7px; padding: 12px 18px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+    .legend-label { color: var(--muted); font-size: 11px; margin-right: 4px; }
+    .legend button { display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent; color: var(--ink); padding: 5px 7px; border-radius: 7px; cursor: pointer; font-size: 11px; }
+    .legend button:hover, .legend button:focus-visible { background: var(--paper); }
+    .legend button[aria-pressed="false"] { opacity: .38; text-decoration: line-through; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; background: var(--green); }
+    .dot.seats { background: var(--blue); } .dot.service { background: var(--orange); } .dot.facility { background: #646b65; } .dot.route { background: var(--gold); }
+    .info-card { padding: 24px 22px; display: flex; flex-direction: column; min-height: 100%; }
+    .info-kicker { display: flex; justify-content: space-between; align-items: center; color: var(--orange); font: 800 11px ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
+    .info-card h2 { margin: 12px 0 8px; font-size: 26px; letter-spacing: -.04em; }
+    .info-card p { color: var(--muted); line-height: 1.8; font-size: 14px; margin: 0; }
+    .info-rule { height: 1px; background: var(--line); margin: 22px 0; }
+    .facts { display: grid; gap: 12px; margin: 0; }
+    .fact { display: grid; grid-template-columns: 80px 1fr; gap: 12px; font-size: 12px; }
+    .fact dt { color: var(--muted); } .fact dd { margin: 0; font-weight: 750; }
+    .tip { margin-top: auto; padding: 14px; border-radius: 12px; background: #edf3ec; color: var(--green-dark); font-size: 12px; line-height: 1.7; }
+    .tip strong { display: block; margin-bottom: 3px; }
+    .status { margin-top: 12px; color: var(--muted); font: 11px ui-monospace, monospace; }
+    .svg-label { font-family: "Noto Sans TC", "PingFang TC", system-ui, sans-serif; font-weight: 800; letter-spacing: .02em; }
+    .zone { cursor: pointer; outline: none; }
+    .zone:focus .zone-shape, .zone:hover .zone-shape { filter: brightness(1.05); stroke: var(--orange); stroke-width: 3; }
+    .zone.is-selected .zone-shape { stroke: var(--orange); stroke-width: 4; }
+    @media (max-width: 900px) {
+      .shell { width: min(100% - 24px, 700px); padding-top: 20px; }
+      .topbar { align-items: start; flex-direction: column; gap: 12px; }
+      .stamp { text-align: left; }
+      .workspace { grid-template-columns: 1fr; }
+      .map-viewport { height: 58vh; min-height: 390px; }
+      .info-card { min-height: 270px; }
+      .tip { margin-top: 22px; }
+    }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Event spatial guide / 01</div>
+        <h1>校園餐廳・外燴配置導覽</h1>
+        <p class="lede">用一張可互動的配置圖，先熟悉當天的桌席、餐檯、備餐與服務動線。拖曳畫布移動，滾輪或雙指縮放，點選標示查看細節。</p>
+      </div>
+      <div class="stamp">WIN FORCE+<br>FIELD PLAN / REV. 01</div>
+    </header>
+
+    <section class="workspace" aria-label="外燴配置導覽工作區">
+      <article class="map-card">
+        <div class="toolbar">
+          <span class="toolbar-note">校園餐廳｜示意比例配置・非工程測量圖</span>
+          <div class="toolbar-actions">
+            <button class="control" id="toggleRoute" type="button" aria-pressed="true">顯示服務動線</button>
+            <button class="control" id="resetView" type="button">重設視角</button>
+          </div>
+        </div>
+        <div class="map-viewport" id="mapViewport" aria-label="可拖曳縮放的餐廳配置圖">
+          <svg id="layoutCanvas" viewBox="0 0 1200 720" preserveAspectRatio="xMidYMin meet" role="img" aria-labelledby="mapTitle mapDesc">
+            <title id="mapTitle">校園餐廳外燴 2.5D 配置圖</title>
+            <desc id="mapDesc">中央是高腳桌與座位區，右側為餐檯、椅子區與備餐區，上方為備餐與酒水區，下方為報到、拍照、茶攤與回收區。</desc>
+            <defs>
+              <pattern id="grid" width="34" height="34" patternUnits="userSpaceOnUse"><path d="M 34 0 L 0 0 0 34" fill="none" stroke="#d7d2c7" stroke-width="1" opacity=".55"/></pattern>
+              <filter id="softShadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#18332f" flood-opacity=".17"/></filter>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#e77148"/></marker>
+            </defs>
+            <g id="scene">
+              <rect width="1200" height="720" fill="#ebe6dc"/>
+              <rect x="26" y="24" width="1148" height="670" rx="10" fill="url(#grid)" stroke="#aeb9af" stroke-width="3"/>
+              <g class="layer-facility" data-layer-group="facility">
+                <rect x="26" y="24" width="1148" height="12" fill="#7a847d"/>
+                <rect x="26" y="680" width="1148" height="14" fill="#7a847d"/>
+                <path d="M26 570 H280 M330 570 H750 M810 570 H1174" stroke="#aeb9af" stroke-width="9"/>
+                <path d="M26 82 H230 M980 82 H1174" stroke="#aeb9af" stroke-width="9"/>
+                <text x="52" y="60" class="svg-label" font-size="11" fill="#6f7f78">SCHOOL RESTAURANT / LEVEL 1</text>
+                <text x="1115" y="665" class="svg-label" font-size="11" text-anchor="end" fill="#6f7f78">EXIT / SERVICE</text>
+              </g>
+              <g class="layer-facility" data-layer-group="facility">
+                <g class="zone" data-zone="prep" tabindex="0" role="button" aria-label="備餐區">
+                  <rect class="zone-shape" x="278" y="45" width="275" height="72" rx="6" fill="#5c625e" filter="url(#softShadow)"/>
+                  <text x="416" y="87" class="svg-label" font-size="17" text-anchor="middle" fill="#fffdf8">備餐區・7桌</text>
+                  <text x="416" y="105" font-size="11" text-anchor="middle" fill="#d9ded6">服務人員工作區</text>
+                </g>
+                <g class="zone" data-zone="chairs" tabindex="0" role="button" aria-label="椅子區">
+                  <rect class="zone-shape" x="715" y="168" width="160" height="220" rx="6" fill="#58615d" filter="url(#softShadow)"/>
+                  <text x="795" y="279" class="svg-label" font-size="18" text-anchor="middle" fill="#fffdf8" transform="rotate(-90 795 279)">椅子區</text>
+                  <text x="795" y="359" font-size="11" text-anchor="middle" fill="#d9ded6" transform="rotate(-90 795 359)">6.5m</text>
+                </g>
+              </g>
+
+              <g class="layer-service" data-layer-group="service">
+                <g class="zone" data-zone="beverage" tabindex="0" role="button" aria-label="酒水區">
+                  <rect class="zone-shape" x="520" y="127" width="150" height="72" rx="9" fill="#f4d6d0" stroke="#d98572" stroke-width="2"/>
+                  <text x="595" y="157" class="svg-label" font-size="15" text-anchor="middle" fill="#8b3e32">酒水區</text>
+                  <text x="595" y="179" font-size="11" text-anchor="middle" fill="#8b3e32">飲品補給</text>
+                </g>
+                <g class="zone" data-zone="buffet" tabindex="0" role="button" aria-label="餐檯">
+                  <rect class="zone-shape" x="585" y="227" width="150" height="38" rx="4" fill="#d98c4a" stroke="#a85f2b" stroke-width="2"/>
+                  <rect x="585" y="298" width="150" height="38" rx="4" fill="#d98c4a" stroke="#a85f2b" stroke-width="2"/>
+                  <text x="660" y="220" class="svg-label" font-size="14" text-anchor="middle" fill="#a85f2b">餐檯 × 2</text>
+                </g>
+                <g class="zone" data-zone="checkin" tabindex="0" role="button" aria-label="報到與物品寄放區">
+                  <rect class="zone-shape" x="250" y="545" width="164" height="38" rx="6" fill="#f1c56b" stroke="#ba8730" stroke-width="2"/>
+                  <text x="332" y="570" class="svg-label" font-size="13" text-anchor="middle" fill="#694a18">報到・物品寄放</text>
+                </g>
+                <g class="zone" data-zone="photo" tabindex="0" role="button" aria-label="拍照區">
+                  <rect class="zone-shape" x="435" y="545" width="132" height="38" rx="6" fill="#ead7ed" stroke="#ab77af" stroke-width="2"/>
+                  <text x="501" y="570" class="svg-label" font-size="13" text-anchor="middle" fill="#65426a">拍照區</text>
+                </g>
+                <g class="zone" data-zone="tea" tabindex="0" role="button" aria-label="茶攤區">
+                  <rect class="zone-shape" x="855" y="545" width="176" height="38" rx="6" fill="#bad5c5" stroke="#559173" stroke-width="2"/>
+                  <text x="943" y="570" class="svg-label" font-size="13" text-anchor="middle" fill="#285b42">茶攤區</text>
+                </g>
+                <g class="zone" data-zone="recycle" tabindex="0" role="button" aria-label="回收區">
+                  <rect class="zone-shape" x="700" y="545" width="105" height="38" rx="6" fill="#c9d8e5" stroke="#62809d" stroke-width="2"/>
+                  <text x="752" y="570" class="svg-label" font-size="13" text-anchor="middle" fill="#3b5a73">回收區</text>
+                </g>
+              </g>
+
+              <g class="layer-seats" data-layer-group="seats">
+                <g class="zone" data-zone="tables" tabindex="0" role="button" aria-label="高腳桌與座位區">
+                  <rect class="zone-shape" x="320" y="160" width="270" height="280" rx="18" fill="#fffdf8" stroke="#d5d0c5" stroke-width="2"/>
+                  <text x="455" y="190" class="svg-label" font-size="15" text-anchor="middle" fill="#3977b7">高腳桌 × 20</text>
+                  <g fill="#3977b7" stroke="#fffdf8" stroke-width="4">
+                    <circle cx="370" cy="235" r="10"/><circle cx="425" cy="235" r="10"/><circle cx="480" cy="235" r="10"/><circle cx="535" cy="235" r="10"/>
+                    <circle cx="370" cy="285" r="10"/><circle cx="425" cy="285" r="10"/><circle cx="480" cy="285" r="10"/><circle cx="535" cy="285" r="10"/>
+                    <circle cx="370" cy="335" r="10"/><circle cx="425" cy="335" r="10"/><circle cx="480" cy="335" r="10"/><circle cx="535" cy="335" r="10"/>
+                    <circle cx="370" cy="385" r="10"/><circle cx="425" cy="385" r="10"/><circle cx="480" cy="385" r="10"/><circle cx="535" cy="385" r="10"/>
+                    <circle cx="425" cy="420" r="10"/><circle cx="480" cy="420" r="10"/><circle cx="535" cy="420" r="10"/><circle cx="370" cy="420" r="10"/>
+                  </g>
+                  <path d="M340 455 H570" stroke="#3977b7" stroke-dasharray="4 7" opacity=".5"/>
+                  <text x="455" y="480" font-size="11" text-anchor="middle" fill="#6f7f78">主用餐席・2.5m 通道</text>
+                </g>
+              </g>
+
+              <g class="layer-route" id="routeLayer" data-layer-group="route" opacity=".94">
+                <path d="M650 600 C640 520 650 450 660 340 C668 280 650 220 610 195" fill="none" stroke="#e77148" stroke-width="4" stroke-dasharray="9 8" marker-end="url(#arrow)"/>
+                <path d="M285 600 C300 525 350 500 390 455" fill="none" stroke="#e77148" stroke-width="4" stroke-dasharray="9 8" marker-end="url(#arrow)"/>
+                <path d="M880 600 C840 510 790 460 730 345" fill="none" stroke="#e77148" stroke-width="4" stroke-dasharray="9 8" marker-end="url(#arrow)"/>
+                <text x="680" y="475" class="svg-label" font-size="12" fill="#c65335">服務補給動線</text>
+              </g>
+              <g class="layer-facility" data-layer-group="facility">
+                <g class="zone" data-zone="entry" tabindex="0" role="button" aria-label="主要入口">
+                  <path class="zone-shape" d="M110 638 L190 638" stroke="#2d6a5f" stroke-width="14" stroke-linecap="round"/>
+                  <text x="110" y="625" class="svg-label" font-size="12" fill="#2d6a5f">主要入口</text>
+                </g>
+                <path d="M1050 640 L1130 640" stroke="#2d6a5f" stroke-width="9" stroke-linecap="round"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <div class="legend" aria-label="圖例控制">
+          <span class="legend-label">圖層</span>
+          <button type="button" data-layer="seats" aria-pressed="true"><i class="dot seats"></i>座席</button>
+          <button type="button" data-layer="service" aria-pressed="true"><i class="dot service"></i>服務區</button>
+          <button type="button" data-layer="facility" aria-pressed="true"><i class="dot facility"></i>場地</button>
+          <button type="button" data-layer="route" aria-pressed="true"><i class="dot route"></i>動線</button>
+        </div>
+      </article>
+
+      <aside class="info-card" id="infoPanel" aria-live="polite">
+        <div class="info-kicker"><span id="infoType">Field note 00</span><span id="infoCode">OVERVIEW</span></div>
+        <h2 id="infoTitle">先看整體配置</h2>
+        <p id="infoDescription">中央是主要高腳桌席，右側集中餐檯與椅子，上方為工作與補給區，下方則是報到、拍照、回收與茶攤。橘色虛線代表服務補給的建議動線。</p>
+        <div class="info-rule"></div>
+        <dl class="facts">
+          <div class="fact"><dt>場景</dt><dd id="infoScene">學校餐廳</dd></div>
+          <div class="fact"><dt>配置焦點</dt><dd id="infoFacts">20 組高腳桌席</dd></div>
+          <div class="fact"><dt>操作提示</dt><dd id="infoAction">點選色塊查看細節</dd></div>
+        </dl>
+        <div class="tip"><strong>現場小提醒</strong><span id="infoTip">先從主要入口進場，再沿著橘色動線到中央桌席；備餐與酒水區靠近上側牆面，方便工作人員補給。</span></div>
+        <div class="status" id="statusText">視角 100%・圖層全部顯示</div>
+      </aside>
+    </section>
+  </main>
+  <script>
+    const svg = document.querySelector('#layoutCanvas');
+    const scene = document.querySelector('#scene');
+    const viewport = document.querySelector('#mapViewport');
+    const statusText = document.querySelector('#statusText');
+    const routeButton = document.querySelector('#toggleRoute');
+    const zoneData = {
+      overview: { type: 'Field note 00', code: 'OVERVIEW', title: '先看整體配置', description: '中央是主要高腳桌席，右側集中餐檯與椅子，上方為工作與補給區，下方則是報到、拍照、回收與茶攤。橘色虛線代表服務補給的建議動線。', scene: '學校餐廳', facts: '20 組高腳桌席', action: '點選色塊查看細節', tip: '先從主要入口進場，再沿著橘色動線到中央桌席；備餐與酒水區靠近上側牆面，方便工作人員補給。' },
+      entry: { type: 'Field note 01', code: 'ARRIVAL', title: '主要入口', description: '賓客與工作人員從下側入口進入，報到與物品寄放設在入口附近，避免人流直接穿越用餐區。', scene: '南側入口', facts: '報到／物品寄放', action: '先確認入口標誌', tip: '活動開始前可在入口留出一段緩衝區，讓報到隊伍不會堵住主要動線。' },
+      tables: { type: 'Field note 02', code: 'SEATING', title: '高腳桌與座位區', description: '中央配置 20 組高腳桌，藍色圓點是座位示意。桌席之間保留通道，方便賓客移動與服務人員補給。', scene: '中央用餐區', facts: '高腳桌 × 20／約 2.5m 通道', action: '觀察桌席間距', tip: '帶隊或說明時，可以用中央桌席作為集合參照點，最容易讓第一次到場的人定位。' },
+      prep: { type: 'Field note 03', code: 'BACK OF HOUSE', title: '備餐區', description: '上方深灰區是服務工作區，配置圖標示為 7 桌。此處是餐點整理與工作人員暫存物品的後場位置。', scene: '北側工作區', facts: '備餐區・7 桌', action: '避免賓客穿越', tip: '工作人員進出時，建議保持備餐區前方通道暢通，並將備品集中在標示範圍內。' },
+      beverage: { type: 'Field note 04', code: 'REFRESHMENT', title: '酒水區', description: '酒水區位在備餐區與餐檯之間，靠近上側牆面，能讓補給與賓客取用保持短距離。', scene: '北側補給區', facts: '飲品補給／靠近餐檯', action: '留意補水動線', tip: '若需要補充冰塊、杯具或飲品，從備餐區沿上側通道進出，不必穿越中央桌席。' },
+      buffet: { type: 'Field note 05', code: 'BUFFET', title: '餐檯', description: '右側兩列橘色長桌是餐檯，負責餐點展示與取餐。與椅子區相鄰，形成服務區的主要核心。', scene: '東側餐飲服務區', facts: '餐檯 × 2／椅子區相鄰', action: '確認取餐方向', tip: '餐點補充以右側服務區為主，賓客取餐後再回到中央桌席，避免逆向交錯。' },
+      chairs: { type: 'Field note 06', code: 'EQUIPMENT', title: '椅子區', description: '右側深灰區集中放置椅子，取用時從服務區側邊進出，避免佔用中央桌席通道。', scene: '東側設備區', facts: '集中存放／6.5m 示意範圍', action: '需要時再取用', tip: '如需臨時增加座位，可從椅子區沿右側邊緣搬出，避免跨越餐檯取餐動線。' },
+      checkin: { type: 'Field note 07', code: 'WELCOME', title: '報到與物品寄放', description: '下側入口旁的黃色區域是報到與物品寄放位置，讓進場流程在一開始就完成分流。', scene: '南側入口旁', facts: '報到／物品寄放', action: '保持前方排隊空間', tip: '可用立牌或工作人員站位，讓第一次到場的同仁不用進入餐區就能找到報到位置。' },
+      photo: { type: 'Field note 08', code: 'PHOTO', title: '拍照區', description: '拍照區設在下側中段，靠近報到與主要動線，但不直接卡住餐點取用路徑。', scene: '南側中段', facts: '拍照板／合影位置', action: '避免聚集過久', tip: '可安排拍照順序或指定站位，避免拍照人流回堵入口。' },
+      recycle: { type: 'Field note 09', code: 'SORTING', title: '回收區', description: '回收區安排在餐檯與茶攤之間，讓用餐後的動線自然往右側離開中央桌席。', scene: '東南側服務區', facts: '餐後回收／分類', action: '靠近離場路線', tip: '垃圾分類標示要面向中央桌席，讓賓客在離席時能一眼找到。' },
+      tea: { type: 'Field note 10', code: 'TEA STATION', title: '茶攤區', description: '茶攤區位於下側右方，作為另一個飲品與交流節點，和中央桌席保持清楚的側向關係。', scene: '東南側茶點區', facts: '茶飲／交流節點', action: '看清離場方向', tip: '茶攤區可作為活動後段的停留點，服務人員補給時從右側邊緣進出較順。' }
+    };
+    let scale = 1;
+    let tx = 0;
+    let ty = 0;
+    let activeZone = null;
+    let dragging = false;
+    let pointerStart = { x: 0, y: 0, tx: 0, ty: 0 };
+
+    function updateTransform() {
+      svg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+      statusText.textContent = `視角 ${Math.round(scale * 100)}%・${routeButton.getAttribute('aria-pressed') === 'true' ? '圖層全部顯示' : '服務動線已隱藏'}`;
+    }
+
+    function selectZone(zoneId) {
+      const data = zoneData[zoneId] || zoneData.overview;
+      document.querySelectorAll('.zone.is-selected').forEach((el) => el.classList.remove('is-selected'));
+      document.querySelectorAll(`[data-zone="${zoneId}"]`).forEach((el) => el.classList.add('is-selected'));
+      document.querySelector('#infoType').textContent = data.type;
+      document.querySelector('#infoCode').textContent = data.code;
+      document.querySelector('#infoTitle').textContent = data.title;
+      document.querySelector('#infoDescription').textContent = data.description;
+      document.querySelector('#infoScene').textContent = data.scene;
+      document.querySelector('#infoFacts').textContent = data.facts;
+      document.querySelector('#infoAction').textContent = data.action;
+      document.querySelector('#infoTip').textContent = data.tip;
+      activeZone = zoneId;
+    }
+
+    function resetView() {
+      scale = 1; tx = 0; ty = 0; activeZone = null;
+      document.querySelectorAll('.zone.is-selected').forEach((el) => el.classList.remove('is-selected'));
+      document.querySelectorAll('[data-layer]').forEach((button) => { button.setAttribute('aria-pressed', 'true'); setLayerVisibility(button.dataset.layer, true); });
+      routeButton.setAttribute('aria-pressed', 'true');
+      document.querySelector('#routeLayer').style.display = '';
+      selectZone('overview');
+      updateTransform();
+    }
+
+    function setLayerVisibility(layer, visible) {
+      document.querySelectorAll(`[data-layer-group="${layer}"]`).forEach((el) => { el.style.display = visible ? '' : 'none'; });
+    }
+
+    document.querySelectorAll('.zone').forEach((zone) => {
+      zone.addEventListener('click', () => selectZone(zone.dataset.zone));
+      zone.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectZone(zone.dataset.zone); } });
+    });
+    document.querySelectorAll('[data-layer]').forEach((button) => {
+      button.addEventListener('click', () => { const visible = button.getAttribute('aria-pressed') !== 'true'; button.setAttribute('aria-pressed', String(visible)); setLayerVisibility(button.dataset.layer, visible); updateTransform(); });
+    });
+    routeButton.addEventListener('click', () => { const visible = routeButton.getAttribute('aria-pressed') !== 'true'; routeButton.setAttribute('aria-pressed', String(visible)); document.querySelector('#routeLayer').style.display = visible ? '' : 'none'; updateTransform(); });
+    document.querySelector('#resetView').addEventListener('click', resetView);
+    viewport.addEventListener('wheel', (event) => { event.preventDefault(); scale = Math.max(.65, Math.min(2.4, scale * (event.deltaY < 0 ? 1.08 : .92))); updateTransform(); }, { passive: false });
+    viewport.addEventListener('pointerdown', (event) => { dragging = true; viewport.classList.add('is-panning'); viewport.setPointerCapture(event.pointerId); pointerStart = { x: event.clientX, y: event.clientY, tx, ty }; });
+    viewport.addEventListener('pointermove', (event) => { if (!dragging) return; tx = pointerStart.tx + event.clientX - pointerStart.x; ty = pointerStart.ty + event.clientY - pointerStart.y; updateTransform(); });
+    viewport.addEventListener('pointerup', () => { dragging = false; viewport.classList.remove('is-panning'); });
+    viewport.addEventListener('pointercancel', () => { dragging = false; viewport.classList.remove('is-panning'); });
+    updateTransform();
+  </script>
+</body>
+</html>
